@@ -1,10 +1,12 @@
 import { ChatOllama } from "langchain/chat_models/ollama";
 import { ChatPromptTemplate } from "langchain/prompts";
-import { StructuredOutputParser } from "langchain/output_parsers";
-
 
 const fetchChat = async (inputKeys, chatHistory, prompts) => {
+    // AI model. All parsing should happen outside of this function.
+    // Always return an array of messages, with the last message being the AI's response.
     let prompt, messages;
+
+    console.log(inputKeys);
   
     if (chatHistory.length == 0) {
       messages = [
@@ -15,18 +17,16 @@ const fetchChat = async (inputKeys, chatHistory, prompts) => {
       messages = [...chatHistory, ["human", prompts["human"]]];
     }
     prompt = ChatPromptTemplate.fromMessages(messages);
-    const parser = StructuredOutputParser.fromNamesAndDescriptions(prompts["parserInput"]);
 
     const model = new ChatOllama({
       baseUrl: "http://localhost:11434",
       model: "openhermes2.5-mistral",
-      format: "json",
-      stop: ["\n\n\n"],
+      format: prompts["mode"] || null,
+      stop: ["\n\n\n", "<|im_end|>"],
     });
   
     const result = await prompt
       .pipe(model)
-      .pipe(parser)
       .invoke(inputKeys);
   
     // Replace keys dynamically in all messages
@@ -40,9 +40,11 @@ const fetchChat = async (inputKeys, chatHistory, prompts) => {
       }
     });
   
-    const newMessages = [...messages, ["ai", result["translated"]]];
+    const newMessages = [...messages, ["ai", result.content]];
+    console.log(newMessages);
   
     return newMessages;
+
   }
 
 export { fetchChat };
