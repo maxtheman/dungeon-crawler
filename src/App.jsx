@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
-import { createMachine, state, transition, interpret } from 'robot3'
+import { createMachine, state, transition, interpret, invoke } from 'robot3'
 import { useMachine } from 'react-robot';
+import { fetchChat } from './services'
 
+
+const gameContext = initialContext => ({
+  chatHistory: initialContext.chatHistory
+})
 
 const gameMachine = createMachine({
   start: state(
@@ -14,12 +19,12 @@ const gameMachine = createMachine({
     transition('ENEMY_ACTION', 'playerTurn')
   ),
   end: state()
-})
+}, gameContext)
 
 function App() {
-  const [history, setHistory] = useState([])
+  let initialContext = { chatHistory: ["Start"]}
   const [inputText, setInputText] = useState('')
-  const [current, send] = useMachine(gameMachine);
+  const [current, send] = useMachine(gameMachine, initialContext)
 
   return (
     <div className="p-6 space-y-8">
@@ -49,10 +54,10 @@ function App() {
           <button onClick={() => send('ENEMY_ACTION')}>Continue</button>
         </div>
       )}
-      {history.map((message, index) => (
+      {current.context.chatHistory.map((message, index) => (
         <div key={index} className={`chat ${index % 2 === 0 ? 'chat-start' : 'chat-end'}`}>
           <div className="chat-bubble">
-            {message[1]}
+            {message}
           </div>
         </div>
       ))}
