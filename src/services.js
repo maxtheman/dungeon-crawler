@@ -6,29 +6,39 @@ const fetchChat = async (inputKeys, chatHistory, prompts) => {
     // Always return an array of messages, with the last message being the AI's response.
     let prompt, messages;
 
-    console.log(inputKeys);
+    const systemPromptPresent = (chatHistory.length > 0 && chatHistory[0].length > 0 && chatHistory[0][0] == 'system')  ? true : false
   
-    if (chatHistory.length == 0) {
-      messages = [
-        ["system", prompts["system"]],
-        ["human", prompts["human"]],
-      ]
+    if (!systemPromptPresent) {
+      if(chatHistory.length === 0)
+      // construct history if no chat history is provided
+        messages = [
+          ["system", prompts["system"]],
+          ["human", prompts["human"]],
+        ]
+      else {
+        messages = [
+          ["system", prompts["system"]],
+          ...chatHistory
+        ]
+      }
     } else {
-      messages = [...chatHistory, ["human", prompts["human"]]];
+      messages = chatHistory
     }
-    prompt = ChatPromptTemplate.fromMessages(messages);
+    prompt = ChatPromptTemplate.fromMessages(messages)
 
     const model = new ChatOllama({
-      baseUrl: "http://localhost:11434",
+      baseUrl: "http://127.0.0.1:11434",
       model: "openhermes2.5-mistral",
       format: prompts["mode"] || null,
       stop: ["\n\n\n", "<|im_end|>"],
     });
-  
+
+    // add check here to ensure that inputKeys are all here.
+
     const result = await prompt
       .pipe(model)
       .invoke(inputKeys);
-  
+
     // Replace keys dynamically in all messages
     Object.keys(inputKeys).forEach(key => {
       const regex = new RegExp(`{${key}}`, 'g');
@@ -39,10 +49,9 @@ const fetchChat = async (inputKeys, chatHistory, prompts) => {
         }
       }
     });
-  
+
     const newMessages = [...messages, ["ai", result.content]];
-    console.log(newMessages);
-  
+
     return newMessages;
 
   }
